@@ -1,26 +1,48 @@
 # 截图说明
 
-本目录用于存放 GitHub README、作品集页面或面试展示材料中使用的截图。请只提交经过脱敏、可公开展示且与本项目真实产物一致的图片，不要伪造截图或引用不存在的图片路径。
+本目录用于存放 README、作品集页面或面试展示材料中使用的截图。只提交经过脱敏、可公开展示且与本项目真实产物一致的图片，不伪造截图，也不引用不存在的路径。
 
 ## 当前已有截图
 
-| 文件 | 说明 | 当前状态 |
+| 文件 | 说明 | 来源 |
 | --- | --- | --- |
-| `dashboard/dashboard_preview.png` | Excel 看板预览，可直接用于 README 展示 | 已存在，存放在 `dashboard/` 目录 |
+| `screenshots/dashboard_overview.png` | 自动生成的 Excel 看板 `00_看板` 页，展示 8 个 KPI 和 4 张图 | 由 `dashboard/auto_dashboard.xlsx` 导出 |
+| `dashboard/dashboard_preview.png` | 早期手工版看板预览，保留作为对照 | 早期版本 |
 
-## 建议补充截图
+README 另外引用了 `reports/figures/` 下由脚本生成的图表：
+
+| 文件 | 说明 |
+| --- | --- |
+| `reports/figures/behavior_distribution.png` | 四种行为类型分布 |
+| `reports/figures/daily_trends.png` | DAU 与每日购买趋势 |
+| `reports/figures/hourly_behavior_heatmap.png` | 24 小时行为热力图 |
+| `reports/figures/top_categories_purchase.png` | 购买次数 Top 品类 |
+| `reports/figures/cohort_activity.png` | 首购 Cohort 活跃留存热力图 |
+| `reports/figures/cohort_purchase.png` | 首购 Cohort 购买留存热力图 |
+
+## 可选补充截图
 
 | 建议文件名 | 说明 | 状态 |
 | --- | --- | --- |
-| `dify_knowledge_files.png` | Dify 知识库文档列表，展示已上传的 README、报告、SQL 说明和看板说明 | 待手动补充 |
-| `dify_chatbot_config.png` | Dify Chatbot 配置页面，展示绑定 Knowledge、系统提示词或引用归属设置 | 待手动补充 |
-| `dify_qa_demo.png` | Dify 问答效果演示，可展示指标解释、业务洞察或一分钟项目介绍 | 待手动补充 |
-| `sql_query_example.png` | SQL 查询示例，可选，建议展示 CTE、CASE WHEN、GROUP BY 或窗口函数片段 | 可选补充 |
-| `report_preview.png` | 报告预览，可选，建议展示业务洞察或分析汇总的局部页面 | 可选补充 |
+| `dify_knowledge_files.png` | Dify 知识库文档列表 | 本轮未做 Dify 升级，不引用 |
+| `dify_qa_demo.png` | Dify 带引用的问答效果 | 本轮未做 Dify 升级，不引用 |
+| `sql_query_example.png` | SQL 查询示例（CTE / 窗口函数） | 可选 |
 
 ## 使用建议
 
-- README 顶部优先使用 `dashboard/dashboard_preview.png`，因为该截图已经存在。
-- 只有当 `screenshots/dify_qa_demo.png`、`screenshots/dify_knowledge_files.png` 或 `screenshots/dify_chatbot_config.png` 真实存在时，才在 README 中引用。
-- 不建议提交完整原始数据截图，也不要展示完整 `data/UserBehavior.csv` 文件内容。
-- 如果未来新增 Power BI 或其他 BI 工具版本，请先确保仓库中真实存在对应文件，再补充截图和 README 引用。
+- README 顶部优先使用 `screenshots/dashboard_overview.png`，它对应脚本生成的真实看板。
+- 只有图片真实存在时才写进 README；`screenshots/README.md` 中登记为“可选”的文件不要在 README 引用。
+- 不提交完整原始数据截图，不展示 `data/UserBehavior.csv` 的内容。
+- 截图要清晰、不要截到任务栏或无关窗口；更新看板后，记得重新导出并覆盖 `dashboard_overview.png`。
+
+## 重新生成看板截图
+
+1. 重新生成看板：
+
+   ```powershell
+   python src/generate_reports.py
+   ```
+
+2. 用 Excel / WPS 打开 `dashboard/auto_dashboard.xlsx`，切到 `00_看板` 页。
+3. 调整窗口到合适大小，只截取看板区域，保存为 `screenshots/dashboard_overview.png`。
+4. 确认 README 中引用的路径仍然是 `screenshots/dashboard_overview.png`。

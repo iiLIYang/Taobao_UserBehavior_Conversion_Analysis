@@ -28,7 +28,7 @@ CREATE TABLE user_behavior (
 
 ```sql
 COPY user_behavior
-FROM 'C:/Users/blues/Desktop/电商分析/Taobao-User-Behavior-Conversion-Analysis/data/cleaned_user_behavior.csv'
+FROM 'C:/path/to/Taobao-User-Behavior-Conversion-Analysis/data/cleaned_user_behavior.csv'
 WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 ```
 

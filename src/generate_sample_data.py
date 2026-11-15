@@ -15,7 +15,7 @@ import pandas as pd
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = PROJECT_ROOT / "data" / "raw_user_behavior_sample.csv"
+DEFAULT_OUTPUT = PROJECT_ROOT / "data" / "synthetic_user_behavior_sample.csv"
 BASE_TIME = pd.Timestamp("2017-11-25 00:00:00")
 END_TIME = pd.Timestamp("2017-12-03 23:59:59")
 

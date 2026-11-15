@@ -26,6 +26,7 @@ from analysis import (
     user_segmentation,
 )
 from data_cleaning import DEFAULT_TIMEZONE, REQUIRED_COLUMNS, VALID_BEHAVIORS
+from export_dashboard import export_dashboard
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -532,6 +533,7 @@ def main() -> None:
     write_analysis_summary(df, quality)
     write_business_insights(df)
     write_dashboard_data(df, quality)
+    export_dashboard()
     print(f"Generated reports under {REPORTS_DIR}")
     print(f"Generated figures under {FIGURES_DIR}")
 

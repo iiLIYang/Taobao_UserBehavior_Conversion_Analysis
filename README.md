@@ -1,28 +1,162 @@
-# Taobao User Behavior & Conversion Funnel Analysis
+# 淘宝用户行为与转化漏斗分析
 
-淘宝用户行为与转化漏斗分析项目
+Taobao User Behavior & Conversion Funnel Analysis
 
-## 项目亮点
+> 基于淘宝 UserBehavior 公开数据集的 10 万行真实样本，完成数据清洗与抽样偏差对照，构建用户级 / 用户-商品级双口径转化漏斗与首购 Cohort 留存，并用一条命令自动生成 Excel 看板。
 
-- **真实公开样本**：基于淘宝 UserBehavior 公开数据集抽取 100,000 行真实用户行为记录，清洗后保留 99,956 条有效记录，适合作为 GitHub 可复现的数据分析作品集样本。
-- **完整分析链路**：覆盖 Python / Pandas 数据清洗、数据质量检查、PostgreSQL SQL 分析、Markdown 报告生成和 Excel 看板展示，呈现从原始数据到业务结论的完整流程。
-- **双口径转化漏斗**：同时构建用户级转化漏斗，以及更严格的用户-商品级顺序转化漏斗，区分“用户是否购买过”和“同一商品路径是否完成转化”。
-- **运营分析场景明确**：围绕加购未购买用户、复购用户、高价值用户、Top 购买品类和小时行为高峰，输出可用于再营销、留存运营和品类运营的分析建议。
-- **能力展示清晰**：项目可体现 Python 数据处理、SQL 指标分析、转化口径拆解、业务洞察表达和 Excel 可视化看板能力，适合数据分析、数据运营、产品运营和 AI 产品测试实习岗位展示。
+![自动生成的 Excel 看板](screenshots/dashboard_overview.png)
+
+*上图由 `python src/generate_reports.py` 生成：8 个 KPI、4 张图、7 个工作表。删除 `dashboard/auto_dashboard.xlsx` 后重跑命令即可重建。*
+
+## 项目来源与本人贡献
+
+本项目基于 [bluesblue320-hue/Taobao-User-Behavior-Conversion-Analysis](https://github.com/bluesblue320-hue/Taobao-User-Behavior-Conversion-Analysis) 二次开发，原项目提供了数据清洗、Pandas 分析、SQL、报告和手工 Excel 看板的基础框架。
+
+本人在此基础上的主要改动：
+
+- 新增 `src/cohort_retention.py` 与 `reports/cohort_retention.md`：首购 Cohort 活跃/购买留存、未观察格子处理和随机样本对照。
+- 新增 `src/export_dashboard.py` 与 `dashboard/auto_dashboard.xlsx`：由分析结果一键生成 7 页 Excel 看板。
+- 新增 `reports/sampling_comparison.md`：顺序抽样与按行随机抽样的指标偏差对照。
+- 新增 `tests/test_cohort_retention.py`，并重构 README、数据和运行说明。
+
+> 原仓库未声明开源许可证；本仓库仅用于个人作品集展示。如原作者有异议，请联系删除。
+
+## 核心结论
+
+**1. 行为结构稳定，但“高转化率”是观察口径造成的。**
+样本中浏览（PV）占 89.70%、购买占 2.10%，两种抽样方式下几乎一致。用户级浏览-购买转化率为 **68.27%**，换成“同一用户-同一商品且先浏览后购买”的严格口径后只剩 **1.46%**，相差约 47 倍。前者适合看人群购买覆盖，后者才接近具体商品路径转化。
+
+**2. 抽样方式会直接改写结论。**
+同一份全量数据，顺序抽样下 UV 为 983、复购率 65.87%、顺序漏斗 1.46%；随机按行抽样下 UV 为 91,923、复购率 0.30%、顺序漏斗归零。差的是“用户行为是否被完整保留”，不是业务能力。→ [reports/sampling_comparison.md](reports/sampling_comparison.md)
+
+**3. 留存只能看短期，而且要识别大盘干扰。**
+671 名首购用户形成 9 个队列，D1 活跃留存 82.0%、购买留存 20.1%。D7 活跃留存 99.6% 是 12-02/12-03 全站 DAU 高峰（962/965，平时约 710）抬起来的，不能当成留存变好。→ [reports/cohort_retention.md](reports/cohort_retention.md)
+
+**4. 最明确的运营落点是“加购未购买”人群。**
+样本中有 **196** 人加购后未购买；用户级加购-购买转化率为 72.89%，说明加购人群意向更强。购买次数 Top 品类为 `2735466`（38 次），购买高峰在 **13:00**（Asia/Shanghai）。
+
+**5. 产物可一键复现。**
+一条 `python src/generate_reports.py` 同时重算主分析指标、生成 Markdown 报告与图表、以及 7 页 Excel 看板（Cohort 报告由 `cohort_retention.py` 单独生成）；`python -m pytest` 的 5 个用例覆盖数据清洗与核心指标。
+
+## 怎么跑
+
+```powershell
+pip install -r requirements.txt
+python src/generate_reports.py
+python src/cohort_retention.py --compare-input data/cleaned_user_behavior_random_sample.csv --compare-label "随机按行抽样"
+python -m pytest
+```
+
+仓库已包含 10 万行样本和对照样本，**不需要先下载原始数据**即可跑通。从全量数据重新抽样的命令见 [How to Run](#how-to-run)。
+
+## 指标口径说明
+
+### 两套漏斗
+
+| 口径 | 定义 | 适用场景 | 样本结果 |
+| --- | --- | --- | ---: |
+| 用户级转化 | 同一用户在窗口内是否同时出现过浏览和购买 | 看人群购买覆盖 | 68.27% |
+| 用户-商品级顺序转化 | 同一 `user_id + item_id` 先浏览/加购，之后才购买 | 看具体商品路径转化 | 1.46% / 6.02% |
+
+两个指标回答的不是同一个问题。只看 68.27% 会误判平台转化能力，只看 1.46% 又会漏掉人群整体购买覆盖，所以必须同时展示。
+
+### 首购 Cohort
+
+- 队列：按用户首次购买日期分组，共 9 个队列（2017-11-25 至 2017-12-03）。
+- 第 N 天 = 行为日期 − 队列日期；D0 为队列当天，活跃留存和购买留存都应为 100%。
+- 活跃留存 = 当天有任意行为；购买留存 = 当天再次购买。
+- 尚未到观察期的格子记为“—”，**不能当成 0**；否则尾部会被误读成流失。
+
+### 抽样方式
+
+- **主分析使用顺序抽样**：连续读取全量文件前 10 万行，保留同一用户的完整行为路径，但只覆盖 983 个重度用户。
+- **对照样本使用随机按行抽样**：固定随机种子 42，保留为 `data/cleaned_user_behavior_random_sample.csv`，仅用于 `sampling_comparison.md` 和 Cohort 报告第 10 节。
+- 两种方式对 UV、复购率、顺序漏斗的影响已量化；完整对比与复现命令见 [reports/sampling_comparison.md](reports/sampling_comparison.md)。
+
+### 金额字段
+
+原始数据没有金额字段，因此本项目**不计算 GMV、客单价，也没有做 RFM 的 M 维度**。用户价值只按购买次数、活跃天数和行为深度分层，避免用替代指标冒充金额口径。
+
+## 已知局限
+
+- **没有曝光分母**：样本只包含已产生行为的用户记录，不含曝光人群、站外访客和新访客，因此用户级转化率不能等同于平台真实访客转化率。
+- **主样本有偏**：顺序抽样只覆盖 983 个重度用户，人均 101.68 条行为，复购率、留存率和用户级转化率都会偏高。
+- **窗口只有 9 天**：只能看短期回访，不能外推月留存或长期留存。
+- **没有金额字段**：无法计算 GMV、客单价，用户价值只能用购买广度近似。
+- **没有对照组和显著性检验**：业务建议是基于样本的假设，不是因果结论；落地前需要 A/B 测试验证。
+
+## 技术栈
+
+- Python / Pandas / NumPy：数据清洗、指标计算
+- Matplotlib / Seaborn：趋势图、热力图
+- SQL：16 条分析查询（`sql/taobao_behavior_analysis.sql`）
+- xlsxwriter：脚本自动生成 Excel 看板
+- pytest：数据清洗与指标测试
+- Jupyter Notebook：探索性分析
+- Dify Knowledge / RAG：可选扩展文档（原项目自带，当前版本未改动）
+
+## 目录结构
+
+```text
+Taobao-User-Behavior-Conversion-Analysis/
+|-- README.md                         门面：结论、口径、运行方式
+|-- requirements.txt
+|-- data/
+|   |-- README.md                     数据来源 + 抽样说明
+|   |-- raw_user_behavior_sample.csv          主样本（顺序抽样）
+|   |-- cleaned_user_behavior.csv             主样本清洗后（99,956 行 / 983 用户）
+|   |-- raw_user_behavior_random_sample.csv   对照样本（随机种子 42）
+|   `-- cleaned_user_behavior_random_sample.csv
+|-- src/
+|   |-- prepare_real_data_sample.py   ① 从全量数据抽 10 万行
+|   |-- data_cleaning.py              ② 清洗 + 时区转换
+|   |-- analysis.py                   ③ 核心指标与漏斗
+|   |-- cohort_retention.py           ④ 首购 Cohort 留存
+|   |-- generate_reports.py           ⑤ 报告 + 图 + 看板（主入口）
+|   `-- export_dashboard.py           ⑥ 由 dashboard_data.json 生成 xlsx
+|-- sql/
+|   |-- README.md
+|   `-- taobao_behavior_analysis.sql  16 条 PostgreSQL 查询
+|-- reports/
+|   |-- analysis_summary.md
+|   |-- business_insights.md
+|   |-- data_quality_report.md
+|   |-- sampling_comparison.md        抽样偏差对照
+|   |-- cohort_retention.md           Cohort 留存
+|   |-- resume_project_review.md
+|   |-- dashboard_data.json           报告与看板共用的数据源
+|   |-- cohort_activity_matrix.csv
+|   |-- cohort_purchase_matrix.csv
+|   `-- figures/                      6 张图（行为、趋势、热力图、Cohort）
+|-- dashboard/
+|   |-- auto_dashboard.xlsx           脚本自动生成（7 个 sheet / 4 张图）
+|   |-- dashboard_preview.png         早期手工版看板预览
+|   |-- taobao_behavior_dashboard.xlsx 早期手工版，保留对照
+|   `-- dashboard_design.md
+|-- screenshots/
+|   |-- README.md                     截图清单与使用说明
+|   `-- dashboard_overview.png        自动看板 00_看板 页截图
+|-- tests/
+|   |-- test_data_cleaning.py
+|   |-- test_analysis.py
+|   `-- test_cohort_retention.py
+|-- notebooks/
+|   `-- 01_data_cleaning_eda.ipynb
+|-- dify/
+|   `-- ...                           原项目自带的 Dify 配置文档
+`-- dify_knowledge/
+    `-- ...                           原项目自带的 Dify 知识库副本
+```
+
+> 脚本按“抽样 → 清洗 → 分析 → Cohort → 报告/看板”的顺序编号说明，但**文件名不加数字前缀**：`generate_reports.py` 通过 `from export_dashboard import export_dashboard` 互相引用，改成 `01_`、`05_` 会导致模块无法导入。
 
 ## 项目概览
 
-本项目基于公开淘宝 `UserBehavior.csv` 数据集抽取的真实样本，构建电商用户行为与转化漏斗分析流程。项目覆盖数据清洗、数据质量检查、SQL 分析、用户转化漏斗、品类转化、复购行为、用户分层和 Excel 看板展示，适合作为数据分析、数据运营、产品运营和 AI 产品测试实习岗位的简历项目。
+本项目基于公开淘宝 `UserBehavior.csv` 数据集抽取的真实样本，构建电商用户行为与转化漏斗分析流程。项目覆盖数据清洗、数据质量检查、SQL 分析、转化漏斗、首购 Cohort 留存、品类转化、复购行为、用户分层和抽样偏差对照，适合作为数据分析、数据运营、产品运营实习岗位的简历项目。
 
-当前提交的数据文件来自下载后的 `archive.zip` / `UserBehavior.csv`，抽取 100,000 行真实行为记录。按 `Asia/Shanghai` 业务时区清洗后，共保留 99,956 条有效行为记录用于分析。
+当前提交的数据文件来自下载后的 `archive.zip` / `UserBehavior.csv`，采用“顺序抽样”抽取 100,000 行真实行为记录（保证同一用户的多条行为被完整保留）。按 `Asia/Shanghai` 业务时区清洗后，共保留 99,956 条有效行为记录用于主分析；另保留一份随机按行抽样样本，用于抽样偏差对照。
 
 数据集来源：[Alibaba Tianchi Taobao UserBehavior Dataset](https://tianchi.aliyun.com/dataset/649?lang=en-us)。
-
-## 看板预览
-
-项目已包含 Excel 看板文件：`dashboard/taobao_behavior_dashboard.xlsx`。
-
-![Excel 看板预览](dashboard/dashboard_preview.png)
 
 ## 分析问题
 
@@ -36,6 +170,8 @@
 - 哪些品类既有一定流量规模，又有较强转化效率？
 - 是否存在复购用户，高价值用户是否集中？
 - 有多少用户加购后没有购买，是否适合作为再营销人群？
+- 首次购买后第 1/3/7 天，有多少用户还活跃、还会再次购买？
+- 抽样方式会怎样改变 UV、复购率和顺序漏斗？报告应该怎么声明偏差？
 
 ## 数据集说明
 
@@ -58,68 +194,6 @@
 | `cart` | add to cart | 加购 |
 | `buy` | purchase | 购买 |
 
-## 技术栈
-
-- Python
-- Pandas
-- Matplotlib / Seaborn
-- PostgreSQL SQL
-- Jupyter Notebook
-- Excel dashboard
-- Dify Knowledge / RAG Demo
-
-## 项目结构
-
-```text
-Taobao-User-Behavior-Conversion-Analysis/
-|-- README.md
-|-- requirements.txt
-|-- data/
-|   |-- README.md
-|   |-- raw_user_behavior_sample.csv
-|   `-- cleaned_user_behavior.csv
-|-- notebooks/
-|   `-- 01_data_cleaning_eda.ipynb
-|-- sql/
-|   |-- README.md
-|   `-- taobao_behavior_analysis.sql
-|-- reports/
-|   |-- analysis_summary.md
-|   |-- business_insights.md
-|   |-- data_quality_report.md
-|   |-- resume_project_review.md
-|   |-- dashboard_data.json
-|   `-- figures/
-|       |-- behavior_distribution.png
-|       |-- daily_trends.png
-|       |-- hourly_behavior_heatmap.png
-|       `-- top_categories_purchase.png
-|-- dashboard/
-|   |-- dashboard_design.md
-|   |-- dashboard_preview.png
-|   `-- taobao_behavior_dashboard.xlsx
-|-- dify/
-|   |-- README.md
-|   |-- knowledge_base_files.md
-|   |-- system_prompt.md
-|   |-- sample_questions.md
-|   `-- app_config_guide.md
-|-- dify_knowledge/
-|   |-- README.md
-|   |-- upload_checklist.md
-|   |-- sample_questions.md
-|   |-- system_prompt.md
-|   `-- app_config_guide.md
-|-- screenshots/
-|   `-- README.md
-`-- src/
-    |-- data_cleaning.py
-    |-- analysis.py
-    |-- generate_reports.py
-    |-- prepare_real_data_sample.py
-    `-- generate_sample_data.py
-```
-
 ## 数据清洗流程
 
 清洗脚本同时支持官方无表头 `UserBehavior.csv` 和本项目中已抽取的带表头样本 CSV。
@@ -139,7 +213,7 @@ Taobao-User-Behavior-Conversion-Analysis/
 
 ## 核心指标
 
-当前真实样本结果：
+当前主分析样本（顺序抽样）结果：
 
 | 指标 | 数值 |
 | --- | ---: |
@@ -159,32 +233,22 @@ Taobao-User-Behavior-Conversion-Analysis/
 | 复购率 | 65.87% |
 | 加购未购买用户数 | 196 |
 
-## 指标口径说明
+## 首购 Cohort 留存
 
-- **用户级浏览-购买转化率较高的原因**：本项目样本来自已经发生过行为的用户记录，不包含完整曝光人群、站外访客或未产生行为的真实访客，因此不能等同于淘宝平台真实访客转化率。
-- **用户级转化率的含义**：用户级浏览-购买转化率衡量的是“一个用户在样本窗口内是否既发生过浏览，也发生过购买”，适合观察样本用户整体是否进入过购买阶段。
-- **用户-商品级顺序转化率的含义**：用户-商品级顺序转化率以 `user_id + item_id` 为分析对象，并要求同一用户对同一商品按时间顺序从浏览或加购走向购买，口径更严格，更接近具体商品路径转化。
-- **为什么两个指标要同时展示**：用户级指标有助于理解人群整体购买覆盖，用户-商品级顺序指标有助于评估具体商品路径效率。两个转化率一起展示，可以避免只看单一高转化率而误判业务表现。
+| 指标 | 数值 |
+| --- | ---: |
+| 首购用户数 | 671 |
+| 队列数 | 9（2017-11-25 至 2017-12-03） |
+| D1 活跃留存 | 82.0% |
+| D1 购买留存 | 20.1% |
+| D7 活跃留存 | 99.6%（仅 2 个队列可观察，受全站活跃高峰影响） |
+| D7 购买留存 | 27.6%（仅 2 个队列可观察） |
 
-分析覆盖：
-
-- 总行为次数、UV、商品数、品类数
-- 行为类型分布和行为占比
-- 清洗前后数据质量检查
-- 用户级转化漏斗
-- 带时间顺序约束的用户-商品级转化漏斗
-- DAU 和每日购买趋势
-- `Asia/Shanghai` 口径下的小时行为分布
-- 购买次数 Top 品类
-- 品类级浏览-购买、加购-购买转化率
-- 复购率
-- 加购未购买用户
-- 高价值用户
-- 按行为深度和购买频次划分的用户分层
+> D7 的活跃留存接近 100% 是 12-02/12-03 全站 DAU 高峰（约 960，对比平时约 710）造成的大盘效应，不能当作真实留存结论。完整矩阵、未观察格子和随机样本对照见 [reports/cohort_retention.md](reports/cohort_retention.md)。
 
 ## SQL 分析
 
-`sql/taobao_behavior_analysis.sql` 包含以下 PostgreSQL 查询：
+`sql/taobao_behavior_analysis.sql` 包含 16 条 PostgreSQL 查询：
 
 - 整体行为规模
 - 行为类型分布和占比
@@ -203,44 +267,43 @@ Taobao-User-Behavior-Conversion-Analysis/
 - 带时间顺序约束的用户-商品级漏斗
 - 品类级转化分析
 
-## 看板和报告
+导入与执行说明见 [sql/README.md](sql/README.md)。
+
+## 可视化产物
+
+| 自动生成看板 | 行为类型分布 |
+| --- | --- |
+| ![](screenshots/dashboard_overview.png) | ![](reports/figures/behavior_distribution.png) |
+
+| Cohort 活跃留存 | Cohort 购买留存 |
+| --- | --- |
+| ![](reports/figures/cohort_activity.png) | ![](reports/figures/cohort_purchase.png) |
+
+| DAU 与购买趋势 | 小时行为热力图 |
+| --- | --- |
+| ![](reports/figures/daily_trends.png) | ![](reports/figures/hourly_behavior_heatmap.png) |
+
+图目录：`reports/figures/`。截图清单与使用说明：[screenshots/README.md](screenshots/README.md)。
+
+## 看板与报告
 
 看板产物：
 
-- `dashboard/taobao_behavior_dashboard.xlsx`：Excel 看板文件。
-- `dashboard/dashboard_preview.png`：看板预览图。
+- `dashboard/auto_dashboard.xlsx`：脚本自动生成的 Excel 看板，包含 7 个工作表和 4 张图（行为分布、每日趋势、品类 Top10、用户分层）。
+- `dashboard/taobao_behavior_dashboard.xlsx`：早期手工版 Excel 看板，保留作为对照。
+- `screenshots/dashboard_overview.png`：自动看板 `00_看板` 页截图。
+- `dashboard/dashboard_preview.png`：早期手工版看板预览图。
 - `dashboard/dashboard_design.md`：看板设计说明。
+- `src/export_dashboard.py`：看板生成脚本，读取 `reports/dashboard_data.json` 并重建 xlsx。
 
-生成报告：
+报告产物：
 
 - `reports/data_quality_report.md`：数据质量检查和清洗影响。
 - `reports/analysis_summary.md`：核心指标、严格漏斗、品类转化和用户分层。
 - `reports/business_insights.md`：面向业务动作的分析洞察和验证指标。
-- `reports/figures/`：可用于 README、报告或展示材料的图表图片。
-  - `reports/figures/behavior_distribution.png`：行为类型分布。
-  - `reports/figures/daily_trends.png`：DAU 与购买趋势。
-  - `reports/figures/hourly_behavior_heatmap.png`：小时行为热力图。
-  - `reports/figures/top_categories_purchase.png`：购买次数 Top 品类。
-
-## Dify AI 问答助手扩展
-
-本项目基于 Dify Knowledge 构建了一个项目问答助手 Demo，将 README、分析总结、业务洞察、数据质量报告、SQL 说明和看板说明接入知识库，用于展示“数据分析 + AI 应用产品化”的能力。该 Demo 基于公开数据集样本和项目文档构建，适合作为个人作品集展示，不代表企业级生产系统，也没有训练或微调大模型。
-
-Dify Web App：[https://udify.app/chat/0nIFW08DLfoL8IzA](https://udify.app/chat/0nIFW08DLfoL8IzA)
-
-助手可回答的问题包括：
-
-- 项目背景、数据来源和样本口径。
-- 数据清洗流程、异常时间过滤和北京时间转换。
-- 核心指标口径，尤其是用户级转化率与用户-商品级顺序转化率的区别。
-- SQL 分析覆盖范围、CTE 和窗口函数使用场景。
-- 业务洞察、运营动作和验证指标。
-- Excel 看板设计思路和展示重点。
-- 面试表达、一分钟项目介绍和简历 bullet。
-
-实现原理：这是一个 RAG 问答助手，不是微调模型，也不是训练大模型，更不是实时读取 CSV 重新分析。配置流程是先上传项目文档，Dify 对文档分块，并使用 embedding 模型建立语义索引；用户提问时先检索相关文档片段，再由大模型结合检索结果和系统提示词生成回答。开启 Citation / Attribution 后，可以展示回答来源。
-
-当前仓库尚未包含 Dify Demo 截图，可补充 Dify Demo 截图。
+- `reports/sampling_comparison.md`：顺序抽样与随机按行抽样的指标对比、偏差说明和复现命令。
+- `reports/cohort_retention.md`：首购 Cohort 留存矩阵、加权留存、DAU 对照和随机样本对照。
+- `reports/cohort_activity_matrix.csv` / `reports/cohort_purchase_matrix.csv`：留存矩阵原始数据，可直接导入 Excel。
 
 ## 业务洞察
 
@@ -281,11 +344,20 @@ Dify Web App：[https://udify.app/chat/0nIFW08DLfoL8IzA](https://udify.app/chat/
 - **可执行动作**：在购买高峰前后测试消息触达、优惠入口和首页资源位；对高购买规模品类做稳定供给和资源承接，对高转化效率品类做推荐位或促销测试。
 - **可验证指标**：分小时购买次数、购买用户数、品类浏览-购买转化率、品类加购-购买转化率和 Top 品类购买占比。
 
+## AI问答助手（Dify RAG）
+
+> 这部分是原仓库自带的 Dify 配置说明与知识库副本，**不在本项目当前范围内**，也没有计入简历 bullet。本轮未验证其公开链接，因此 README 不展示链接。
+
+项目内置了一套 Dify Knowledge 配置文档，用于演示“把分析文档做成 RAG 问答入口”的思路。它不训练、不微调模型，也不实时读取 CSV 重新分析；回答依据是上传的 Markdown 文档。
+
+- 配置说明：`dify/README.md`、`dify/system_prompt.md`、`dify/app_config_guide.md`
+- 知识库副本：`dify_knowledge/`。
+
 ## How to Run
 
-Run the following commands from the project root directory.
+以下命令均在项目根目录执行。
 
-Create and activate a virtual environment on Windows PowerShell:
+创建并激活虚拟环境（Windows PowerShell）：
 
 ```powershell
 python -m venv .venv
@@ -293,7 +365,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-On macOS or Linux, use:
+macOS / Linux：
 
 ```bash
 python -m venv .venv
@@ -301,90 +373,80 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-The repository already includes a 100,000-row real sample. To regenerate a small synthetic sample only for testing:
+仓库已包含 100,000 行真实样本。主分析使用**顺序抽样**（`data/cleaned_user_behavior.csv`）；**随机按行抽样**样本单独保存，用于抽样偏差对照。若只想生成一个小规模合成样本做测试：
 
 ```bash
-python src/generate_sample_data.py --rows 5000
+python src/generate_sample_data.py --rows 5000 --output data/synthetic_user_behavior_sample.csv
 ```
 
-To rebuild the real public dataset sample, download `UserBehavior.csv` from Tianchi or the Kaggle mirror, put it under `data/UserBehavior.csv`, and extract a GitHub-friendly real sample:
+> 合成样本会写到单独文件，不会覆盖主分析用的真实样本 `data/raw_user_behavior_sample.csv`。
+
+从全量数据重建真实样本（需先下载 `UserBehavior.csv` 到 `data/`）：
 
 ```bash
 python src/prepare_real_data_sample.py --input data/UserBehavior.csv --output data/raw_user_behavior_sample.csv --rows 100000
 ```
 
-For a less biased sample, use fixed-seed random sampling:
+固定种子生成随机对照样本（**写入单独文件，不覆盖主样本**）：
 
 ```bash
-python src/prepare_real_data_sample.py --input data/UserBehavior.csv --output data/raw_user_behavior_sample.csv --rows 100000 --sample-mode random --random-state 42
+python src/prepare_real_data_sample.py --input data/UserBehavior.csv --output data/raw_user_behavior_random_sample.csv --rows 100000 --sample-mode random --random-state 42
+python src/data_cleaning.py --input data/raw_user_behavior_random_sample.csv --output data/cleaned_user_behavior_random_sample.csv
 ```
 
-If the downloaded file is `UserBehavior.csv.zip`, you can use it directly without extracting the full CSV:
+如果下载的是压缩包，可以直接读取：
 
 ```bash
-python src/prepare_real_data_sample.py --input data/UserBehavior.csv.zip --output data/raw_user_behavior_sample.csv --rows 100000 --sample-mode random --random-state 42
+python src/prepare_real_data_sample.py --input data/UserBehavior.csv.zip --output data/raw_user_behavior_random_sample.csv --rows 100000 --sample-mode random --random-state 42
 ```
 
-Clean the selected raw sample:
+清洗主样本：
 
 ```bash
 python src/data_cleaning.py --input data/raw_user_behavior_sample.csv --output data/cleaned_user_behavior.csv
 ```
 
-Run Pandas analysis:
+运行 Pandas 分析：
 
 ```bash
 python src/analysis.py --input data/cleaned_user_behavior.csv
 ```
 
-Regenerate markdown reports and chart images:
+重新生成 Markdown 报告、图表和 Excel 看板：
 
 ```bash
 python src/generate_reports.py
 ```
 
-Run tests:
+运行首购 Cohort 留存分析（含随机样本对照）：
+
+```bash
+python src/cohort_retention.py \
+  --input data/cleaned_user_behavior.csv \
+  --compare-input data/cleaned_user_behavior_random_sample.csv \
+  --compare-label "随机按行抽样" \
+  --primary-label "首购完整样本"
+```
+
+单独重建 Excel 看板（通常不需要，`generate_reports.py` 已包含）：
+
+```bash
+python src/export_dashboard.py
+```
+
+运行测试：
 
 ```bash
 python -m pytest
 ```
 
-Analyze the full Tianchi dataset directly if your machine has enough memory and storage:
-
-```bash
-python src/data_cleaning.py --input data/UserBehavior.csv --output data/cleaned_user_behavior.csv
-python src/analysis.py --input data/cleaned_user_behavior.csv
-python src/generate_reports.py
-```
+> `generate_reports.py` 固定读取 `data/raw_user_behavior_sample.csv` 和 `data/cleaned_user_behavior.csv`，所以主报告始终使用顺序抽样样本。随机样本只用于抽样对比和 Cohort 对照。
 
 ## Future Improvements
 
-- Add a native Power BI `.pbix` version of the dashboard.
-- Add cohort analysis by first purchase date.
-- Add RFM-style user segmentation based on frequency and recency.
-- Add automated table exports for SQL query results.
-- Expand pytest coverage for edge cases and empty datasets.
-
-## Resume Bullet Points 中文简历写法参考
-
-淘宝用户行为与转化漏斗分析项目｜个人项目｜Python / Pandas / PostgreSQL / SQL / Excel
-
-正式简历精简版：
-
-- 基于淘宝 UserBehavior 公开数据集抽取 10 万行真实行为样本，完成数据清洗、异常时间过滤、北京时间转换与分析字段构建，保留 99,956 条有效记录用于分析。
-- 使用 Pandas 与 PostgreSQL 统计 PV、UV、购买次数、复购率、用户级转化率和用户-商品级顺序转化率，区分整体人群转化与具体商品路径转化。
-- 通过 CTE、CASE WHEN、GROUP BY 和窗口函数分析 DAU、小时活跃、Top 购买品类、高价值用户和 196 名加购未购买用户，输出再营销与留存运营建议。
-- 构建 Excel 看板展示核心 KPI、行为分布、购买趋势、品类排名和用户分层，并沉淀可复现的数据处理、报告生成和可视化展示流程。
-
-展开版写法参考：
-
-- 基于淘宝 UserBehavior 公开数据集，构建电商用户行为与转化漏斗分析项目，分析浏览、收藏、加购、购买等行为路径。
-- 使用 Pandas 完成数据清洗、北京时间转换、异常时间过滤和行为标签构建，沉淀可复现的数据处理与报告生成脚本。
-- 通过 SQL 和 Pandas 统计用户规模、行为分布、用户级转化率、用户-商品级顺序转化率、复购率和加购未购买用户。
-- 使用 CTE、CASE WHEN、GROUP BY 和窗口函数分析 DAU、购买趋势、品类购买排名、复购用户和高价值用户。
-- 构建 Excel 看板展示核心 KPI、行为分布、DAU 趋势、购买趋势、Top 品类和用户分层，并输出面向运营动作的业务洞察。
-
-AI 扩展功能可选写法：
-
-- 基于 Dify Knowledge 构建电商数据分析项目 AI 问答助手，将 README、分析报告、业务洞察和数据质量报告接入知识库，支持项目背景、指标口径、运营建议和面试表达的自然语言问答。
-- 使用 Dify 搭建 RAG 问答 Demo，对项目文档进行分块、向量化和知识库检索，并通过系统提示词约束回答边界，支持带引用的项目问答与指标解释。
+- 按“用户整组”抽样：先随机抽 `user_id`，再保留这些用户的全部行为，兼顾随机性与路径完整性。
+- 增加 RFM 八类分层，并在报告中说明“无金额字段时 M 用购买件数替代”的口径边界。
+- 对关键差异（如加购未购买 vs 已购买用户的活跃天数）补 Mann-Whitney U 检验和效应量。
+- 增加 DuckDB 版本 SQL，降低复现门槛。
+- 给看板增加 Cohort 页和条件格式色阶。
+- 扩充 pytest 边界用例（空数据、无购买行为、并列值）。
