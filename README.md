@@ -332,8 +332,10 @@ Taobao-User-Behavior-Conversion-Analysis/
 - **可验证指标**：分小时购买次数、购买用户数、品类浏览-购买转化率、品类加购-购买转化率和 Top 品类购买占比。
 
 ## AI问答助手（Dify RAG）
+把项目文档做成可对话入口：9 份 Markdown 进知识库，配“只依据知识库作答、不确定即拒答”的系统提示词，开启引用来源。
+不训练模型，也不实时读取 CSV。
 
-> 这部分是原仓库自带的 Dify 配置说明与知识库副本，**不在本项目当前范围内**，也没有计入简历 bullet。本轮未验证其公开链接，因此 README 不展示链接。
+- 公开链接： <https://udify.app/chat/Nat67LDS0cKm2SJV>
 
 项目内置了一套 Dify Knowledge 配置文档，用于演示“把分析文档做成 RAG 问答入口”的思路。它不训练、不微调模型，也不实时读取 CSV 重新分析；回答依据是上传的 Markdown 文档。
 
