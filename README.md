@@ -8,19 +8,6 @@ Taobao User Behavior & Conversion Funnel Analysis
 
 *上图由 `python src/generate_reports.py` 生成：8 个 KPI、4 张图、7 个工作表。删除 `dashboard/auto_dashboard.xlsx` 后重跑命令即可重建。*
 
-## 项目来源与本人贡献
-
-本项目基于 [bluesblue320-hue/Taobao-User-Behavior-Conversion-Analysis](https://github.com/bluesblue320-hue/Taobao-User-Behavior-Conversion-Analysis) 二次开发，原项目提供了数据清洗、Pandas 分析、SQL、报告和手工 Excel 看板的基础框架。
-
-本人在此基础上的主要改动：
-
-- 新增 `src/cohort_retention.py` 与 `reports/cohort_retention.md`：首购 Cohort 活跃/购买留存、未观察格子处理和随机样本对照。
-- 新增 `src/export_dashboard.py` 与 `dashboard/auto_dashboard.xlsx`：由分析结果一键生成 7 页 Excel 看板。
-- 新增 `reports/sampling_comparison.md`：顺序抽样与按行随机抽样的指标偏差对照。
-- 新增 `tests/test_cohort_retention.py`，并重构 README、数据和运行说明。
-
-> 原仓库未声明开源许可证；本仓库仅用于个人作品集展示。如原作者有异议，请联系删除。
-
 ## 核心结论
 
 **1. 行为结构稳定，但“高转化率”是观察口径造成的。**
@@ -450,3 +437,16 @@ python -m pytest
 - 增加 DuckDB 版本 SQL，降低复现门槛。
 - 给看板增加 Cohort 页和条件格式色阶。
 - 扩充 pytest 边界用例（空数据、无购买行为、并列值）。
+
+## 项目来源与本人贡献
+
+本项目基于 [bluesblue320-hue/Taobao-User-Behavior-Conversion-Analysis](https://github.com/bluesblue320-hue/Taobao-User-Behavior-Conversion-Analysis) 二次开发，原项目提供了数据清洗、Pandas 分析、SQL、报告和手工 Excel 看板的基础框架。
+
+本人在此基础上的主要改动：
+
+- 新增 `src/cohort_retention.py` 与 `reports/cohort_retention.md`：首购 Cohort 活跃/购买留存、未观察格子处理和随机样本对照。
+- 新增 `src/export_dashboard.py` 与 `dashboard/auto_dashboard.xlsx`：由分析结果一键生成 7 页 Excel 看板。
+- 新增 `reports/sampling_comparison.md`：顺序抽样与按行随机抽样的指标偏差对照。
+- 新增 `tests/test_cohort_retention.py`，并重构 README、数据和运行说明。
+
+> 原仓库未声明开源许可证；本仓库仅用于个人作品集展示。如原作者有异议，请联系删除。
